@@ -1,0 +1,19 @@
+import bcrypt from 'bcryptjs';
+import jwt from 'jsonwebtoken';
+import { env } from '../config/env.js';
+
+export async function hashPassword(password: string) {
+  return bcrypt.hash(password, 10);
+}
+
+export async function comparePassword(password: string, hashedPassword: string) {
+  return bcrypt.compare(password, hashedPassword);
+}
+
+export function signToken(payload: Record<string, unknown>) {
+  return jwt.sign(payload, env.jwtSecret, { expiresIn: '7d' });
+}
+
+export function verifyToken(token: string) {
+  return jwt.verify(token, env.jwtSecret) as { userId: string; email: string; role: string };
+}

@@ -1,0 +1,161 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String              @id @default(cuid())
+  name          String
+  email         String              @unique
+  passwordHash  String
+  role          String              @default("STUDENT")
+  phone         String?
+  profileImage  String?
+  isActive      Boolean             @default(true)
+  createdAt     DateTime            @default(now())
+  updatedAt     DateTime            @updatedAt
+  organizerProfile OrganizerProfile?
+  registrations Registration[]
+  notifications Notification[]
+  feedbacks     Feedback[]
+  certificates  Certificate[]
+}
+
+model Society {
+  id                 String             @id @default(cuid())
+  name               String             @unique
+  slug               String             @unique
+  description        String
+  logo               String?
+  banner             String?
+  category           String
+  contactInformation String?
+  socialLinks        String?
+  isActive           Boolean            @default(true)
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  organizers         OrganizerProfile[]
+  events             Event[]
+}
+
+model OrganizerProfile {
+  id          String   @id @default(cuid())
+  userId      String   @unique
+  societyId   String
+  designation String?
+  bio         String?
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  society     Society  @relation(fields: [societyId], references: [id], onDelete: Cascade)
+  events      Event[]
+}
+
+model EventCategory {
+  id          String  @id @default(cuid())
+  name        String  @unique
+  description String?
+  events      Event[]
+}
+
+model Venue {
+  id        String  @id @default(cuid())
+  name      String  @unique
+  building  String?
+  room      String?
+  capacity  Int?
+  location  String?
+  events    Event[]
+}
+
+model Event {
+  id                   String             @id @default(cuid())
+  title                String
+  slug                 String             @unique
+  shortDescription     String
+  description          String
+  banner               String?
+  categoryId           String
+  societyId            String
+  organizerId          String
+  venueId              String
+  eventDate            DateTime
+  startTime            String
+  endTime              String
+  registrationDeadline DateTime
+  capacity             Int?
+  eligibility          String?
+  tags                 String?
+  status               String             @default("DRAFT")
+  createdAt            DateTime           @default(now())
+  updatedAt            DateTime           @updatedAt
+  category             EventCategory      @relation(fields: [categoryId], references: [id])
+  society              Society            @relation(fields: [societyId], references: [id])
+  organizer            OrganizerProfile   @relation(fields: [organizerId], references: [id], onDelete: Cascade)
+  venue                Venue              @relation(fields: [venueId], references: [id])
+  registrations        Registration[]
+  feedbacks            Feedback[]
+  certificates         Certificate[]
+}
+
+model Registration {
+  id                  String             @id @default(cuid())
+  eventId             String
+  studentId           String
+  registrationNumber  String             @unique
+  registeredAt        DateTime           @default(now())
+  status              String             @default("ACTIVE")
+  event               Event              @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  student             User               @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  attendance          Attendance?
+
+  @@unique([eventId, studentId])
+}
+
+model Attendance {
+  id          String          @id @default(cuid())
+  registrationId String        @unique
+  checkedInAt DateTime?
+  checkedInBy String?
+  status      String           @default("PRESENT")
+  registration Registration @relation(fields: [registrationId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String          @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String
+  isRead    Boolean         @default(false)
+  createdAt DateTime        @default(now())
+  user      User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Feedback {
+  id        String   @id @default(cuid())
+  eventId   String
+  studentId String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  event     Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  student   User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, studentId])
+}
+
+model Certificate {
+  id             String   @id @default(cuid())
+  eventId        String
+  studentId      String
+  certificateId  String   @unique
+  issuedAt       DateTime @default(now())
+  certificateUrl String?
+  event          Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  student        User     @relation(fields: [studentId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, studentId])
+}
